@@ -2,55 +2,73 @@ clear all;
 global time_step;
 global birds; 
 
-bird = struct('X', double.empty(0, 3), 'V', double.empty(0, 3), 's_k', 0, 'leader_time', 0);
-% X and V are Nx2 arrays where X_ij is the position and velocity (3 dim)
-% at time t = i - 1
+%% bird struct
+
+% X and V: Nx3 arrays where X_i is position at time step i and 
+%          V_i is velocity at time step i
+% s_k: vector of length time_step, where s_k[i] is the bird's status at
+%      time step i. (follower = 0, leader = 1)
+% t_leader: number of time steps bird has been a leader
+% t_follower: number of time steps bird has been a follower
+% p_leader: bird's probability of becoming a leader
+bird = struct('X', double.empty(0, 3), 'V', double.empty(0, 3), 's_k', uint8.empty(0, 1), ...
+    't_leader', 0, 't_follower', 0, 'p_leader', 2e-4);
+
+%% model flock dynamics for N birds
 
 N = 20;    
-birds = repmat(bird(), N, 1);
+birds = repmat(bird(), N, 1); % create vector of N birds
 
-%birds = createArray(200, 1, bird);
+init_pos = 100*(2*rand(N,3)-1) + 500; % Nx3 vector of random positions
+
 init_Xx = randperm(100, 20); % 200 birds within 20 ft? apart
 init_Xy = randperm(100, 20); 
 init_Xz = randperm(100, 20); 
 
+% initialize bird structs
 for i=1:size(birds, 1)
-    % initialize bird position at t=0 to be random
-    birds(i).X(1,:) = [init_Xx(i), init_Xy(i), init_Xz(i)];
+    birds(i).X(1,:) = init_pos(i, :);
     birds(i).V(1,:) = [0, 0, 0]; % initial velocity 
-end
-time_step = 0; % start 0 time step
-for t=2:35
-    time_step = time_step + 1;
-    flock_dynamics(7, t)
+    birds(i).s_k(1,:) = 0;
 end
 
+T = 1000; % 100 seconds
+% loop for T time steps (each cooresponding to dt = 0.1)
+time_step = 2; % start 2nd time step (time step 1 is initial conditions)
+for t=2:T
+    flock_dynamics(4)
+    time_step = time_step + 1;
+end
+
+%% plot solutions for each time step
 fig = gcf;
-for i=1:time_step
+for i=1:(time_step - 1) / 5
     disp(i)
     clf(fig)
     ax = fig.CurrentAxes;
     for j=1:size(birds,1)
-        if birds(j).s_k == 1
-            scatter3(birds(j).X(i, 1), birds(j).X(i, 2), ...
-                birds(j).X(i, 3), 'filled', 'MarkerFaceColor', 'red')
+        if birds(j).s_k(i) == 1
+            scatter3(birds(j).X(i*5, 1), birds(j).X(i*5, 2), ...
+                birds(j).X(i*5, 3), 'filled', 'MarkerFaceColor', 'red')
         else
-            scatter3(birds(j).X(i, 1), birds(j).X(i, 2), ...
-                birds(j).X(i, 3), 'filled', 'MarkerFaceColor', 'black')
+            scatter3(birds(j).X(i*5, 1), birds(j).X(i*5, 2), ...
+                birds(j).X(i*5, 3), 'filled', 'MarkerFaceColor', 'black')
         end
         hold on
-        xlim([0 2000])
-        ylim([0 2000])
-        zlim([0 2000])
+        xlim([0 1000])
+        ylim([0 1000])
+        zlim([0 1000])
     end
     hold off
-    pause(0.1)
+    pause(0.0001)
 end
 
-% try to solve odes with constant nearest neighbors for 0 to t. This time
+%% ODE func
+
+% try to solve odes with constant nearest neighbors for each time step. This time
 % will be seperate from the time used to update the birds position: ie
 % call ode45 on this for each time step and we will get a vector for the
-% birds X and V. Then what values do we update X and V with?
+% birds X and V at t = timestep * dt
 function dydt = bird_ODEs2(t, y, NN_idx, curr_bird)
     global time_step;
     global birds;
@@ -58,12 +76,13 @@ function dydt = bird_ODEs2(t, y, NN_idx, curr_bird)
     %curr_bird.X(t - delta,:)
     V = y(4:6)'; % should be this birds velocity
     %curr_bird.V(t - delta,:)
+
     % parameters
     C_rep = 2.5;
     C_ali = 3;
     C_att = 0.01;
     epsilon = 0.01;
-    delta = 0;
+    delta = 1;
 
     % make array of birds positions and velocities at time t - delta
     M = size(NN_idx, 1);
@@ -74,14 +93,16 @@ function dydt = bird_ODEs2(t, y, NN_idx, curr_bird)
         neighbor_vel(i, :) = birds(NN_idx(i)).V(time_step - delta, :);
     end
 
-    numerator = neighbor_pos - X;
-    denom = norm(neighbor_pos - X)^2 + epsilon;
-    A_rep = -C_rep * sum(numerator / denom);
-    if curr_bird.s_k == 1
+    % numerator = neighbor_pos - X;
+    % denom = norm(neighbor_pos - X)^2 + epsilon;
+    % A_rep = -C_rep * sum(numerator / denom);
+    denom = vecnorm(neighbor_pos, 2, 2).^2 + norm(X, 2)^2 - 2*(neighbor_pos*X');
+    A_rep = -1*C_rep * sum((neighbor_pos - X) ./ ((vecnorm(neighbor_pos, 2, 2).^2 + norm(X, 2)^2 - 2.*(neighbor_pos*X')) + epsilon));
+    if curr_bird.s_k(time_step) == 1 % if leader at time_step
         dVdt = A_rep;
     else
         A_ali = (C_ali/M) * sum(neighbor_vel - V);
-        A_att = C_att * sum(neighbor_pos - V);
+        A_att = C_att * sum(neighbor_pos - X);
         dVdt = A_rep + A_ali + A_att;
     end
     dXdt = V;
@@ -103,7 +124,7 @@ function dydt = bird_ODEs(t, y, NN_idx, birds, curr_bird)
     C_ali = 3;
     C_att = 0.01;
     epsilon = 0.01;
-    delta = 0;
+    delta = 1;
 
     % make array of birds positions and velocities at time t - delta
     M = size(NN_idx, 1);
@@ -130,62 +151,84 @@ end
 
 
 
-function flock_dynamics(M, time)
+function flock_dynamics(M)
     global time_step;
     global birds;
-    % C_rep = 2.5;
-    % C_ali = 3;
-    % C_att = 0.01;
-    delta = 0;
-    p = 3; % persistance time (original 700)
-    d = 20; % persistance distance
-    tau = 800;
-    p_transition = .0002;
+    delta = 1; % # of time steps for delay (1 time step: dt = 0.1)
+    p = 700; % persistance time (original 700)
+    d = 200; % persistance distance
+    refractory_time = 800;
+    p_transition = 2e-4;
     
-    M_count = 0;
     
     for i=1:size(birds, 1)
-        random_num = randi(1000, 'double');
-        if random_num <= 5
-            birds(i).s_k = 1;
+        random_num = rand(); % generate random double btween 0 and 1
+
+        % switch to leader at probability p_leader
+        if random_num <= birds(i).p_leader 
+            assert(birds(i).s_k(time_step - 1) == 0)
+            birds(i).s_k(time_step) = 1;
+            birds(i).p_leader = 0;
+            birds(i).t_leader = birds(i).t_leader + 1;
+            birds(i).t_follower = 0;
             disp("BIRD " + i + " IS LEADER")
-        end
-        if birds(i).s_k == 1
-            birds(i).leader_time = birds(i).leader_time + 1;
-            if birds(i).leader_time > p % bird has been leader for longer time than persistance time
-                birds(i).s_k = 0;    % reset to follower
-                birds(i).leader_time = 0;
+
+        % bird was a leader on prev. time step
+        elseif birds(i).s_k(time_step - 1) == 1 
+            if birds(i).t_leader > p % bird has been leader longer than persistance time
+                % reset to follower
+                birds(i).s_k(time_step) = 0;
+                birds(i).t_leader = 0;
+                birds(i).t_follower = birds(i).t_follower + 1;
+                birds(i).p_leader = p_transition; % reset probability to initial probability
+            else
+                birds(i).s_k(time_step) = 1; % stay a leader
+                birds(i).t_leader = birds(i).t_leader + 1;
             end
+            
+        % was a follower on prev. time step and did not switch status this time step
+        else 
+             birds(i).s_k(time_step) = 0; % stay a follower
+             birds(i).t_follower = birds(i).t_follower + 1;
+             if birds(i).t_follower > refractory_time % bird has been follower for longer than refractory time
+                birds(i).p_leader = birds(i).p_leader * p_transition; % decrease prob. of becoming leader
+             end
         end
-        dist = zeros(size(birds, 1), 1);
+
+
+        distances = zeros(size(birds, 1), 1);
         NN_idx = zeros(M, 1); % indices of the M nearest neighbors to bird i
         for j=1:size(birds, 1) 
             if i ~= j
-                if time_step == 1 % first time step, compare everyone's inital positions
-                    dist(j) = norm(birds(i).X(time_step,:) - birds(j).X(time_step,:));
-                else    % some birds have been updated, want to compare previous time steps
-                    dist(j) = norm(birds(i).X(time_step - 1,:) - birds(j).X(time_step - 1,:));
-                end
+                distances(j) = norm(birds(i).X(time_step - 1,:) - birds(j).X(time_step - 1,:));
             else
-                dist(j) = Inf; % distance to self
+                distances(j) = Inf; % distance to self
             end
-            [~, idx] = sort(dist);
+            [~, idx] = sort(distances);
             NN_idx = idx(1:M, :); % splice to get the M nearest neighbors' indices
-            if dist(NN_idx(1)) > d % distance to nearest neighbor is greater than persistance dist
-                birds(i).s_k = 0;
-                birds(i).leader_time = 0;
-            end
         end
-        delta = 0;
-        % make array of this birds positions and velocities at time t - delta
-
+        
+        % distance to nearest neighbor is greater than persistance dist
+        if distances(NN_idx(1)) > d & birds(i).s_k(time_step - 1) == 1
+            % reset to follower   
+            birds(i).s_k(time_step) = 0;
+            birds(i).t_leader = 0;
+            birds(i).t_follower = birds(i).t_follower + 1;
+            birds(i).p_leader = p_transition;
+        end
+        % make array of this birds position and velocity at time t - delta
         y0 = [birds(i).X(time_step - delta,:) birds(i).V(time_step - delta,:)];
-        tspan = [0 .1];
+        tspan = [0 0.1]; % [0 dt]
         [t, y] = ode45(@(t,y) bird_ODEs2(t,y,NN_idx, birds(i)),tspan,y0);
+        %y = dde23(@(t,y) bird_ODEs2(t, y, NN_idx, birds(i)), 0.1, @bird_hist, tspan);
         % update X and V for this time step
-        birds(i).X(time_step + 1, :) = y(end, 1:3);
-        birds(i).V(time_step + 1, :) = y(end, 4:6);
+        birds(i).X(time_step, :) = y(end, 1:3);
+        birds(i).V(time_step, :) = y(end, 4:6);
         %disp(y)
         %disp(birds(i).X)    %pass by reference?? value of birds(i) changes after exiting this loop
     end
+end
+
+function history = bird_hist(t)
+    history = ones(20, 6);
 end
