@@ -1,0 +1,5 @@
+Video 1: 100 birds, M = 4, 500 time steps, 50 persistence distance, all other parameters same as paper
+
+Video 2: 200 birds, M = 5, 1000 time steps, 30 persistence distance
+
+Video 3: 200 birds, M = 5, 1000 time steps, 30 persistence distance

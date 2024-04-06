@@ -110,7 +110,7 @@ plot(tspan, mean_vel)
 hold on
 disp(size([tspan fliplr(tspan)]))
 disp(size([std_lower fliplr(std_upper)]))
-fill([tspan, fliplr(tspan)], [std_lower' fliplr(std_upper)'], 'b')
+patch([tspan fliplr(tspan)], [std_lower fliplr(std_upper)], 'b')
 hold off
 %% ODE func
 
