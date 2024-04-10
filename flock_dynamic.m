@@ -3,6 +3,7 @@ global time_step;
 global birds; 
 global mean_vel;
 global std_vel;
+global mean_pos;
 
 %% bird struct
 
@@ -18,7 +19,7 @@ bird = struct('X', double.empty(0, 3), 'V', double.empty(0, 3), 's_k', uint8.emp
 
 %% model flock dynamics for N birds
 
-N = 50;    
+N = 10;    
 birds = repmat(bird(), N, 1); % create vector of N birds
 
 init_pos = 100*(2*rand(N,3)-1) + 300; % Nx3 vector of random positions
@@ -34,7 +35,7 @@ for i=1:size(birds, 1)
     birds(i).s_k(1,:) = 0;
 end
 
-T = 50; 
+T = 500; 
 
 mean_vel = zeros(T, 1);
 std_vel = zeros(T, 1);
@@ -51,9 +52,9 @@ end
 
 %% plot solutions for each time step
 
-video = VideoWriter('flock_video');
-video.FrameRate = 10; 
-open(video)
+%video = VideoWriter('flock_video', 'MPEG-4');
+%video.FrameRate = 10; 
+%open(video)
 
  fig = gcf;
  for i=1:(time_step - 1) / 10
@@ -69,16 +70,17 @@ open(video)
                  birds(j).X(i*10, 3), 'filled', 'MarkerFaceColor', 'black')
          end
          hold on
+         plot3(300, 300, 300, '.', 'MarkerSize', 24, 'Color','blue')
          xlim([0 600])
          ylim([0 600])
          zlim([0 600])
      end
      hold off
      pause(0.0001)
-     frame = getframe(gcf); %get frame
-     writeVideo(video, frame);
+     %frame = getframe(gcf); %get frame
+     %writeVideo(video, frame);
  end
- close(video)
+ %close(video)
 
 %% plot 2D solutions
 % fig = gcf;
@@ -102,15 +104,17 @@ open(video)
 %     pause(0.0001)
 % end
 
-tspan = 1:time_step-1;
+tspan = 1:(time_step-1);
 std_upper = mean_vel + std_vel;
 std_lower = mean_vel - std_vel;
 figure(2)
 plot(tspan, mean_vel)
 hold on
-disp(size([tspan fliplr(tspan)]))
-disp(size([std_lower fliplr(std_upper)]))
-fill([tspan, fliplr(tspan)], [std_lower' fliplr(std_upper)'], 'b')
+plot(tspan, std_lower, "LineStyle", "--", "Color", 	"#0072BD")
+plot(tspan, std_upper, "LineStyle", "--", "Color", 	"#0072BD")
+ylabel("Average Velocity")
+xlabel("time")
+legend("$\mu$", "$\mu \pm \sigma$", 'interpreter', 'latex')
 hold off
 %% ODE func
 
@@ -132,7 +136,8 @@ function dydt = bird_ODEs2(t, y, NN_idx, curr_bird)
     C_att = 0.01;
     epsilon = 0.01;
     delta = 1;
-
+    
+    obstacle = [300 300 300];
     % make array of birds positions and velocities at time t - delta
     M = size(NN_idx, 1);
     neighbor_pos = zeros(M, 3);
@@ -147,12 +152,20 @@ function dydt = bird_ODEs2(t, y, NN_idx, curr_bird)
     % A_rep = -C_rep * sum(numerator / denom);
     denom = vecnorm(neighbor_pos, 2, 2).^2 + norm(X, 2)^2 - 2*(neighbor_pos*X');
     A_rep = -1*C_rep * sum((neighbor_pos - X) ./ ((vecnorm(neighbor_pos, 2, 2).^2 + norm(X, 2)^2 - 2.*(neighbor_pos*X')) + epsilon));
+
+    A_rep_obstacle = -1*C_rep * sum((obstacle - X) ./ ((vecnorm(obstacle, 2, 2).^2 + norm(X, 2)^2 - 2.*(obstacle*X')) + epsilon));
+    
+
+
     if curr_bird.s_k(time_step) == 1 % if leader at time_step
         dVdt = A_rep;
     else
         A_ali = (C_ali/M) * sum(neighbor_vel - V);
         A_att = C_att * sum(neighbor_pos - X);
         dVdt = A_rep + A_ali + A_att;
+    end
+    if norm(obstacle - curr_bird.X(time_step - 1,:)) < 100
+        dVdt = dVdt + A_rep_obstacle;
     end
     dXdt = V;
     dydt = [dXdt dVdt]';
@@ -167,7 +180,7 @@ function flock_dynamics(M)
     % summed_vel = 0;
     delta = 1; % # of time steps for delay (1 time step: dt = 0.1)
     p = 700; % persistance time (original 700)
-    d = 40; % persistance distance
+    d = 30; % persistance distance
     refractory_time = 800;
     p_transition = 2e-4;
 
@@ -237,8 +250,24 @@ function flock_dynamics(M)
         % update X and V for this time step
         birds(i).X(time_step, :) = y(end, 1:3);
         birds(i).V(time_step, :) = y(end, 4:6);
+
+        obstacle_pos = [300 300 300];
+        notice_dist = 100;
+        %check for obstacles here?
+        % if norm(obstacle_pos - birds(i).X(time_step,:)) < notice_dist
+        %     [~, closest_dim] = sort(obstacle_pos - birds(i).X(time_step,:));
+        %     if closest_dim(1) == 1 || closest_dim(1) == 2
+        %         birds(i).V(time_step, :) = birds(i).V(time_step, :) + [0 0 1];
+        %     else
+        %         birds(i).V(time_step, :) = birds(i).V(time_step, :) + [1 0 0];
+        %     end
+        % 
+        % end
+
         velocities(i) = sqrt(birds(i).V(time_step, 1)^2 + birds(i).V(time_step, 2)^2);
-        %summed_vel = summed_vel + sqrt(birds(i).V(time_step, 1)^2 + birds(i).V(time_step, 2)^2);
+        
+
+
     end
     mean_vel(time_step, :) = mean(velocities);
     std_vel(time_step, :) = std(velocities);
