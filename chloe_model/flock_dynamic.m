@@ -19,7 +19,7 @@ bird = struct('X', double.empty(0, 3), 'V', double.empty(0, 3), 's_k', uint8.emp
 
 %% model flock dynamics for N birds
 
-N = 10;    
+N = 200;    
 birds = repmat(bird(), N, 1); % create vector of N birds
 
 init_pos = 100*(2*rand(N,3)-1) + 300; % Nx3 vector of random positions
@@ -35,12 +35,14 @@ for i=1:size(birds, 1)
     birds(i).s_k(1,:) = 0;
 end
 
-T = 500; 
+T = 3e3; % num time steps: t = 300
 
 mean_vel = zeros(T, 1);
 std_vel = zeros(T, 1);
+mean_pos = zeros(T, 3);
 
 mean_vel(1, :) = 0;
+mean_pos(1, :) = mean(init_pos, 1);
 
 % loop for T time steps (each cooresponding to dt = 0.1)
 time_step = 2; % start 2nd time step (time step 1 is initial conditions)
@@ -80,7 +82,7 @@ end
      %frame = getframe(gcf); %get frame
      %writeVideo(video, frame);
  end
- %close(video)
+ %close( video)
 
 %% plot 2D solutions
 % fig = gcf;
@@ -104,6 +106,8 @@ end
 %     pause(0.0001)
 % end
 
+%% plot average velocity
+
 tspan = 1:(time_step-1);
 std_upper = mean_vel + std_vel;
 std_lower = mean_vel - std_vel;
@@ -115,6 +119,13 @@ plot(tspan, std_upper, "LineStyle", "--", "Color", 	"#0072BD")
 ylabel("Average Velocity")
 xlabel("time")
 legend("$\mu$", "$\mu \pm \sigma$", 'interpreter', 'latex')
+hold off
+
+%% plot average position
+tspan = 1:(time_step-1);
+figure(3)
+plot3(mean_pos(:,1), mean_pos(:,2), mean_pos(:,3))
+hold on
 hold off
 %% ODE func
 
@@ -146,14 +157,11 @@ function dydt = bird_ODEs2(t, y, NN_idx, curr_bird)
         neighbor_pos(i, :) = birds(NN_idx(i)).X(time_step - delta, :);
         neighbor_vel(i, :) = birds(NN_idx(i)).V(time_step - delta, :);
     end
-
-    % numerator = neighbor_pos - X;
-    % denom = norm(neighbor_pos - X)^2 + epsilon;
-    % A_rep = -C_rep * sum(numerator / denom);
+    
     denom = vecnorm(neighbor_pos, 2, 2).^2 + norm(X, 2)^2 - 2*(neighbor_pos*X');
-    A_rep = -1*C_rep * sum((neighbor_pos - X) ./ ((vecnorm(neighbor_pos, 2, 2).^2 + norm(X, 2)^2 - 2.*(neighbor_pos*X')) + epsilon));
+    A_rep = -1*C_rep* sum((neighbor_pos - X) ./ ((vecnorm(neighbor_pos, 2, 2).^2 + norm(X, 2)^2 - 2.*(neighbor_pos*X')) + epsilon));
 
-    A_rep_obstacle = -1*C_rep * sum((obstacle - X) ./ ((vecnorm(obstacle, 2, 2).^2 + norm(X, 2)^2 - 2.*(obstacle*X')) + epsilon));
+    A_rep_obstacle = -1*20* sum((obstacle - X) ./ ((vecnorm(obstacle, 2, 2).^2 + norm(X, 2)^2 - 2.*(obstacle*X')) + epsilon));
     
 
 
@@ -164,9 +172,9 @@ function dydt = bird_ODEs2(t, y, NN_idx, curr_bird)
         A_att = C_att * sum(neighbor_pos - X);
         dVdt = A_rep + A_ali + A_att;
     end
-    if norm(obstacle - curr_bird.X(time_step - 1,:)) < 100
-        dVdt = dVdt + A_rep_obstacle;
-    end
+    % if norm(obstacle - curr_bird.X(time_step - 1,:)) < 100
+    %     dVdt = dVdt + A_rep_obstacle;
+    % end
     dXdt = V;
     dydt = [dXdt dVdt]';
 end
@@ -178,6 +186,7 @@ function flock_dynamics(M)
     global mean_vel;
     global std_vel;
     % summed_vel = 0;
+    global mean_pos;
     delta = 1; % # of time steps for delay (1 time step: dt = 0.1)
     p = 700; % persistance time (original 700)
     d = 30; % persistance distance
@@ -185,9 +194,11 @@ function flock_dynamics(M)
     p_transition = 2e-4;
 
     velocities = zeros(size(birds, 1), 1);
+    position_sum = zeros(1, 3);
     
     
     for i=1:size(birds, 1)
+
         random_num = rand(); % generate random double btween 0 and 1
 
         % switch to leader at probability p_leader
@@ -197,7 +208,6 @@ function flock_dynamics(M)
             birds(i).p_leader = 0;
             birds(i).t_leader = birds(i).t_leader + 1;
             birds(i).t_follower = 0;
-            disp("BIRD " + i + " IS LEADER")
 
         % bird was a leader on prev. time step
         elseif birds(i).s_k(time_step - 1) == 1 
@@ -217,7 +227,7 @@ function flock_dynamics(M)
              birds(i).s_k(time_step) = 0; % stay a follower
              birds(i).t_follower = birds(i).t_follower + 1;
              if birds(i).t_follower > refractory_time % bird has been follower for longer than refractory time
-                birds(i).p_leader = birds(i).p_leader * p_transition; % decrease prob. of becoming leader
+                birds(i).p_leader = birds(i).p_leader * (1 - p_transition); % decrease prob. of becoming leader for next timestep
              end
         end
 
@@ -253,7 +263,7 @@ function flock_dynamics(M)
 
         obstacle_pos = [300 300 300];
         notice_dist = 100;
-        %check for obstacles here?
+        % %check for obstacles here?
         % if norm(obstacle_pos - birds(i).X(time_step,:)) < notice_dist
         %     [~, closest_dim] = sort(obstacle_pos - birds(i).X(time_step,:));
         %     if closest_dim(1) == 1 || closest_dim(1) == 2
@@ -265,12 +275,14 @@ function flock_dynamics(M)
         % end
 
         velocities(i) = sqrt(birds(i).V(time_step, 1)^2 + birds(i).V(time_step, 2)^2);
+        position_sum = position_sum + birds(i).X(time_step,:);
         
 
 
     end
     mean_vel(time_step, :) = mean(velocities);
     std_vel(time_step, :) = std(velocities);
+    mean_pos(time_step,:) = position_sum / size(birds, 1);
 
 end
 
