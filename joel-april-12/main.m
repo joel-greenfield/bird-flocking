@@ -7,7 +7,7 @@ n = 200; % Number of birds in flock
 p_f2l_0 = 2e-4; % Initial prob. of follower becoming leader (geometric distribution)
 d_per = 20; % Persistence distance (max. distance to nearest neighbor as leader)
 t_per = 700; % Persistence time (max. time as leader)
-t_ref = 800; % Refractory time (min. time as follower before becoming leader)
+t_ref = 0; % Refractory time (min. time as follower before becoming leader)
 t_del = 0.1; % Delay time (reaction time in velocity delay diff. eq.)
 C_ali = 3; % Alignment coefficient
 C_att = 0.01; % Attraction coefficient
@@ -35,6 +35,7 @@ x = x_0; % Position
 v = v_0; % Velocity
 x_h = zeros(n,3,T/dt); x_h(:,:,1) = x_0; % History of each bird's position
 v_h = zeros(n,3,T/dt); v_h(:,:,1) = v_0; % History of each bird's velocity
+l_h = zeros(n, 1, T/dt); % History of leader status
 
 % % %
 n_f = zeros(T/dt,1); % Number of followers
@@ -82,6 +83,7 @@ while t < T
     t_status = t_status+dt; % Increment time as status
     x_h(:,:,round(t/dt)+1) = x;
     v_h(:,:,round(t/dt)+1) = v;
+    l_h(:,:,round(t/dt)+1) = status;
 
     %% Update position & velocity
     v = v+velocity(f,l,x,x_h,v_h,t,t_del,dt,C_ali,C_att,C_rep,ep,M)*dt;
@@ -94,9 +96,10 @@ toc
 
 close all
 
-animate_birds(x_h,dt)
+animate_birds(x_h, l_h, dt)
 
 figure
 plot(n-n_f)
 
 plot_centers(x_h)
+plot_velocity(v_h, dt)
