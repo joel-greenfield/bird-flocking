@@ -1,3 +1,4 @@
+%% Calculate dVdt for one time step
 function dvdt = velocity(f,l,x,x_h,v_h,t,t_del,dt,C_ali,C_att,C_rep,ep,M)
     temp = zeros(200, 3);
     if t>=t_del
@@ -12,18 +13,23 @@ function dvdt = velocity(f,l,x,x_h,v_h,t,t_del,dt,C_ali,C_att,C_rep,ep,M)
         dist(dist==0) = Inf;
         [~,dist_index] = sort(dist,2);
         n_n = dist_index(:,1:M); % Each bird's M nearest neighbors
+        
+        % calculate dVdt for followers
         f_v = alignment(f,l,x_del,v_del,C_ali,C_att,C_rep,ep,n_n,M) ...
             +attraction(f,l,x_del,v_del,C_ali,C_att,C_rep,ep,n_n,M) ...
             +repulsion(f,l,x_del,v_del,C_ali,C_att,C_rep,ep,n_n,M);
-        l_v = repulsion(f,l,x_del,v_del,C_ali,C_att,C_rep,ep,n_n,M);
 
-        temp(f, :) = f_v(f,:);
+        % calculate dVdt for leaders
+        l_v = repulsion(f,l,x_del,v_del,C_ali,C_att,C_rep,ep,n_n,M);
+        
+        % set dvdt for all agents
+        temp(f, :) = f_v(f,:); 
         temp(l, :) = l_v(l,:);
         dvdt = temp;
 
 
         
-    else
+    else % intialize velocity to zero if time is less than time delay
         dvdt = zeros(length(f),3);
     end
 end

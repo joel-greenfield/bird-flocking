@@ -47,6 +47,9 @@ l_h = zeros(n, 1, T/dt); % History of leader status
 % % %
 n_f = zeros(T/dt,1); % Number of followers
 % % %
+temp_pos = [0 0];
+temp_perp = [0 0];
+temp_v = [0 0];
 
 while t < T
     f = (status == 0); % Follower status (0 = leader, 1 = follower)
@@ -98,12 +101,22 @@ while t < T
     
     %% Obstacles (test -- not used in final model)
     % for i=1:n
+    %    if norm(x(i, 1:2) - obstacle_center) <= notice_radius
+    %        if i==1 && norm(x(i, 1:2) - obstacle_center) > notice_radius - 10
+    %            temp_pos = x(i, 1:2);
+    %        end
     %        d = obstacle_center - x(i,1:2);
     %        p = [-d(2), d(1)]; % get perpendicular vector
     %        new_direction = obstacle_center + p; % move bird in direction of intersection of p and radius of circle
     %        x(i,1:2) = new_direction;
+    %        %new_vel = (new_direction);
     %        % new_direction = (new_direction) / norm(new_direction);
-    %        % v(i,1:2) = new_direction * (v(i,1:2)/norm(v(i,1:2)))
+    %        if i==1 && norm(x(i, 1:2) - obstacle_center) > notice_radius - 10
+    %            temp_perp = new_direction;
+    %            temp_v = v(i, 1:2);
+    %        end
+    % 
+    %    end
     %  end
     
 end

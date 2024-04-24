@@ -1,3 +1,4 @@
+%% Plot average velocity (magnitude) and standard deviation
 function plot_velocity(v_h, dt)
     T = size(v_h, 3);
     tspan = linspace(1, T*dt, T);

@@ -1,3 +1,4 @@
+%% Attraction force
 function dvdt_att = attraction(~,~,x_del,~,~,C_att,~,~,n_n,M)
     dvdt_att = zeros(size(x_del));
     for i = 1:M

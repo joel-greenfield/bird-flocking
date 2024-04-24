@@ -1,3 +1,4 @@
+%% Plot trajectories of the center of the flock
 function plot_centers(x_h)
     x_avg = squeeze((mean(x_h)));
 

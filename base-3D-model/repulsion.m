@@ -1,3 +1,4 @@
+%% Repulsion force
 function dvdt_rep = repulsion(~,~,x_del,~,~,~,C_rep,ep,n_n,M)
     dvdt_rep = zeros(size(x_del));
     for i = 1:M

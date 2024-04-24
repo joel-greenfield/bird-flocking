@@ -1,3 +1,4 @@
+%% Alignment force
 function dvdt_ali = alignment(~,~,~,v_del,C_ali,~,~,~,n_n,M)
     dvdt_ali = zeros(size(v_del));
     for i = 1:M

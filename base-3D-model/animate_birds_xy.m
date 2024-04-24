@@ -1,3 +1,4 @@
+%% Animate bird flock on XY plane with obstacles and save to .mp4
 function animate_birds_xy(x_h, l_h, center, radius, dt)
     n = 100;
     obstacle = nsidedpoly(1000, 'Center', center, 'Radius', radius);
@@ -25,18 +26,12 @@ function animate_birds_xy(x_h, l_h, center, radius, dt)
         plot(center (1), center(2), "Marker",".", "MarkerSize",30, "Color","blue")
         
 
-        %plot3(x_h(:,1,i*100),x_h(:,2,i*100),x_h(:,3,i*100),".",'MarkerSize',30);
+        plot3(x_h(:,1,i*100),x_h(:,2,i*100),x_h(:,3,i*100),".",'MarkerSize',30);
 
         xlim([min(min(x_h(:,1,:))) max(max(x_h(:,1,:)))]); % Set x-axis limits
         ylim([min(min(x_h(:,2,:))) max(max(x_h(:,2,:)))]); % Set y-axis limits
         %xlim([-10e50 10e50])
         %ylim([-10e50 10e50])
-
-        % l_b = [min(x_h(:,1,:)) min(x_h(:,2,:)) min(x_h(:,3,:))];
-        % u_b = [max(x_h(:,1,:)) max(x_h(:,2,:)) max(x_h(:,3,:))];
-        % xlim([min(min(l_b)) max(max(u_b))]); % Set x-axis limits
-        % ylim([min(min(l_b)) max(max(u_b))]); % Set y-axis limits
-        % zlim([min(min(l_b)) max(max(u_b))]); % Set z-axis limits
         
         xlabel('X')
         ylabel('Y')
