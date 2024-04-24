@@ -1,0 +1,16 @@
+
+filename = 'myFile.txt';
+M = csvread(filename);
+ending_idx = find(M(:,1)==0, 1)-1;
+x_centers = M(1:ending_idx,1);
+y_centers = M(1:ending_idx,2);
+
+figure
+plot(x_centers, y_centers, 'k')
+
+xlim([100,110])
+ylim([60,90])
+
+xlabel('x')
+ylabel('y')
+title('Flock Center')
