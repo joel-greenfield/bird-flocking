@@ -1,0 +1,200 @@
+Base model:
+n = 200
+p_f2l_0 = 2e-4
+d_per = 20
+t_per = 700
+t_ref = 800
+t_del = 0.1
+C_ali = 3
+C_att = 0.01
+C_rep = 2.5
+ep = 1e-6
+M = 7
+
+2: change persistance dist
+n = 200
+p_f2l_0 = 2e-4
+d_per = 40
+t_per = 700
+t_ref = 800
+t_del = 0.1
+C_ali = 3
+C_att = 0.01
+C_rep = 2.5
+ep = 1e-6
+M = 7
+
+3: change persistance dist
+n = 200
+p_f2l_0 = 2e-4
+d_per = 80
+t_per = 700
+t_ref = 800
+t_del = 0.1
+C_ali = 3
+C_att = 0.01
+C_rep = 2.5
+ep = 1e-6
+M = 7
+
+4: change refractory time
+n = 200
+p_f2l_0 = 2e-4
+d_per = 20
+t_per = 700
+t_ref = 0
+t_del = 0.1
+C_ali = 3
+C_att = 0.01
+C_rep = 2.5
+ep = 1e-6
+M = 7
+
+5: sink/swarm in beginning
+n = 200
+p_f2l_0 = 2e-4
+d_per = 200
+t_per = 700
+t_ref = 0
+t_del = 0.1
+C_ali = 0.5
+C_att = 0.01
+C_rep = 4
+ep = 1e-6
+M = 7
+
+6: circular movement around obstacle
+N = 200
+p_f2l_0 = 2e-4
+d_per = 200
+t_per = 700
+t_ref = 800
+t_del = 0.1
+C_ali = 3
+C_att = 0.01
+C_rep = 2.5
+ep = 1e-6
+M = 7
+
+Obstacle center = [0 0]
+Notice radius = 300
+
+7: circular movement around obstacle (with 3d video)
+N = 200
+p_f2l_0 = 2e-4
+d_per = 200
+t_per = 700
+t_ref = 800
+t_del = 0.1
+C_ali = 3
+C_att = 0.01
+C_rep = 2.5
+ep = 1e-6
+M = 7
+
+Obstacle center = [0 0]
+Notice radius = 300
+
+8: undefined behavior (low alignment, high attraction) disperse -- also achieved with very high attraction (> 7)
+N = 200
+p_f2l_0 = 2e-4
+d_per = 200
+t_per = 700
+t_ref = 800
+t_del = 0.1
+C_ali = 0.01
+C_att = 2
+C_rep = 2.5
+ep = 1e-6
+M = 7
+
+9: split into clusters (low alignment) -- same amount of leaders
+N = 200
+p_f2l_0 = 2e-4
+d_per = 200
+t_per = 700
+t_ref = 800
+t_del = 0.1
+C_ali = 0.01
+C_att = 0.01
+C_rep = 2.5
+ep = 1e-6
+M = 7
+
+10: split into clusters (high attraction) -- very high number of leaders
+N = 200
+p_f2l_0 = 2e-4
+d_per = 200
+t_per = 700
+t_ref = 800
+t_del = 0.1
+C_ali = 3
+C_att = 0.5
+C_rep = 2.5
+ep = 1e-6
+M = 7
+
+11: disperse but more clustered (more leaders than #8)
+N = 200
+p_f2l_0 = 2e-4
+d_per = 200
+t_per = 700
+t_ref = 800
+t_del = 0.1
+C_ali = 3
+C_att = 5
+C_rep = 2.5
+ep = 1e-6
+M = 7
+
+12: sink swarm, more leaders, low alignment
+N = 200
+p_f2l_0 = 2e-4
+d_per = 300
+t_per = 200
+t_ref = 300
+t_del = 0.1
+C_ali = 0.4
+C_att = 0.01
+C_rep = 2.5
+ep = 1e-6
+M = 7
+
+13: sink swarm (not spherical)
+N = 200
+p_f2l_0 = 2e-4
+d_per = 300
+t_per = 200
+t_ref = 300
+t_del = 0.1
+C_ali = 0.4
+C_att = 0.05
+C_rep = 5
+ep = 1e-6
+M = 7
+
+15: sink swarm split
+N = 200
+p_f2l_0 = 2e-4
+d_per = 300
+t_per = 200
+t_ref = 300
+t_del = 0.1
+C_ali = 0.35
+C_att = 0.05
+C_rep = 5
+ep = 1e-6
+M = 7
+
+16: Base model with leaders
+n = 200
+p_f2l_0 = 2e-4
+d_per = 200
+t_per = 700
+t_ref = 800
+t_del = 0.1
+C_ali = 3
+C_att = 0.01
+C_rep = 2.5
+ep = 1e-6
+M = 7
